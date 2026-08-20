@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediSync — Secure IoT Medication Collection Locker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAF7;
+    --bg-dark:#0B1F24;
+    --bg-dark-2:#0A3A3D;
+    --surface:#FFFFFF;
+    --surface-alt:#F1F3EF;
+    --ink:#14232A;
+    --ink-muted:#57696E;
+    --ink-soft:#8A9A9D;
+    --teal:#0F5257;
+    --teal-bright:#17767D;
+    --rust:#C1440E;
+    --green:#2F7D5B;
+    --amber:#B4801F;
+    --line:#DDE3DF;
+    --line-dark:#1D3A3F;
+    --radius:10px;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:'Space Grotesk', sans-serif;
+    color:var(--ink);
+    line-height:1.15;
+    margin:0 0 .5em 0;
+    letter-spacing:-0.01em;
+  }
+  a{color:var(--teal-bright);}
+  p{margin:0 0 1em 0;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  img{max-width:100%;display:block;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--rust);
+    font-weight:600;
+    margin-bottom:.6em;
+    display:flex;
+    align-items:center;
+    gap:.5em;
+  }
+  .eyebrow::before{
+    content:"";
+    width:16px;height:2px;
+    background:var(--rust);
+    display:inline-block;
+  }
+
+  /* ---------- Skip link & focus ---------- */
+  .skip-link{position:absolute;left:-999px;top:0;background:var(--teal);color:#fff;padding:10px 16px;z-index:999;border-radius:0 0 6px 0;}
+  .skip-link:focus{left:0;}
+  a:focus-visible, button:focus-visible, .navlink:focus-visible{
+    outline:2px solid var(--rust); outline-offset:3px;
+  }
+
+  /* ---------- Top bar (mobile) ---------- */
+  .topbar{
+    display:none;
+    position:sticky; top:0; z-index:50;
+    background:var(--bg-dark);
+    color:#fff;
+    padding:14px 18px;
+    align-items:center;
+    justify-content:space-between;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+  }
+  .topbar button{
+    background:none;border:1px solid rgba(255,255,255,.3);color:#fff;
+    padding:6px 10px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+  }
+
+  /* ---------- Layout shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns:248px 1fr;
+    max-width:1440px;
+    margin:0 auto;
+  }
+  nav.sidenav{
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+    background:var(--bg-dark);
+    color:#cfe4e2;
+    padding:28px 22px 40px;
+    border-right:1px solid var(--line-dark);
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:19px; color:#fff;
+    margin-bottom:6px;
+  }
+  .brand .cross{
+    color:var(--rust); font-size:20px; line-height:1;
+  }
+  .brand-sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; color:#7FA3A0; letter-spacing:.08em;
+    margin-bottom:28px;
+  }
+  .navgroup-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:#5C8A87; margin:22px 0 8px;
+  }
+  .navlink{
+    display:flex; gap:10px;
+    color:#B9D3D0; text-decoration:none;
+    font-size:13.6px; padding:6px 8px;
+    border-radius:6px;
+    margin:1px 0;
+  }
+  .navlink .num{font-family:'IBM Plex Mono',monospace;color:#4E7976;font-size:12px;min-width:18px;}
+  .navlink:hover{background:rgba(255,255,255,.06); color:#fff;}
+  .navlink.active{background:var(--teal-bright); color:#fff;}
+  .navlink.active .num{color:#DDEEEC;}
+
+  main{min-width:0;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    background:radial-gradient(ellipse 900px 500px at 15% -10%, #123f42 0%, transparent 60%), linear-gradient(180deg,var(--bg-dark) 0%, #0D2A2D 100%);
+    color:#fff;
+    padding:88px 56px 64px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:48px;
+    align-items:start;
+    position:relative;
+    z-index:2;
+  }
+  .hero .eyebrow{color:#E8926B;}
+  .hero .eyebrow::before{background:#E8926B;}
+  .hero h1{
+    font-size:44px;
+    color:#fff;
+    max-width:14ch;
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--teal-bright);
+    background:linear-gradient(180deg,transparent 62%, rgba(23,118,125,.55) 62%);
+  }
+  .hero .lede{
+    font-size:16.5px;
+    color:#C7DAD8;
+    max-width:56ch;
+    margin-top:14px;
+  }
+  .hero .stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line-dark);
+    border:1px solid var(--line-dark);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-top:34px;
+    max-width:560px;
+  }
+  .stat{
+    background:#0D2A2D;
+    padding:16px 16px;
+  }
+  .stat .n{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff;}
+  .stat .l{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#89ABA8;letter-spacing:.04em;margin-top:4px;}
+
+  /* console / log ticker — signature element */
+  .console{
+    background:#08181B;
+    border:1px solid var(--line-dark);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 20px 60px -20px rgba(0,0,0,.6);
+  }
+  .console-head{
+    display:flex; align-items:center; gap:8px;
+    padding:11px 14px;
+    background:#0C2528;
+    border-bottom:1px solid var(--line-dark);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#7FA3A0;
+  }
+  .console-head .dot{width:8px;height:8px;border-radius:50%;background:#3A5B58;}
+  .console-head .dot.live{background:var(--green); box-shadow:0 0 0 3px rgba(47,125,91,.25);}
+  .console-body{
+    padding:14px 16px 16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.2px;
+    color:#8FD6C9;
+    height:230px;
+    overflow:hidden;
+    position:relative;
+  }
+  .console-body .line{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    padding:3px 0;
+    opacity:0;
+    animation:fadein .4s forwards;
+    color:#A9C9C6;
+  }
+  .console-body .line .tag{color:var(--green);}
+  .console-body .line .tag.warn{color:var(--amber);}
+  .console-body .line .ts{color:#4E7976; margin-right:8px;}
+  @keyframes fadein{to{opacity:1;}}
+  @media (prefers-reduced-motion:reduce){
+    .console-body .line{animation:none; opacity:1;}
+  }
+
+  /* ---------- Sections ---------- */
+  section{
+    padding:64px 56px;
+    border-bottom:1px solid var(--line);
+    max-width:var(--maxw);
+  }
+  section.wide{max-width:none;}
+  .section-head{max-width:74ch; margin-bottom:28px;}
+  h2{font-size:30px;}
+  h3{font-size:19px; margin-top:1.6em;}
+  .section-num{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--ink-soft);
+    font-size:13px;
+    margin-bottom:6px;
+  }
+  .lead{font-size:17px; color:var(--ink-muted); max-width:62ch;}
+
+  .callout{
+    background:var(--surface-alt);
+    border-left:3px solid var(--teal);
+    border-radius:0 8px 8px 0;
+    padding:16px 20px;
+    margin:20px 0;
+    font-size:15px;
+  }
+  .callout.rust{border-left-color:var(--rust);}
+  .callout .k{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--rust);display:block;margin-bottom:6px;}
+
+  .video-grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;
+    margin:24px 0;
+  }
+  .video-card{
+    border-radius:var(--radius); overflow:hidden;
+    border:1px solid var(--line);
+    background:var(--surface);
+  }
+  .video-card video{
+    display:block; width:100%; height:auto;
+    background:#000;
+  }
+  .video-card .vlabel{
+    padding:12px 14px;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    color:var(--ink-muted);
+  }
+  .video-card .vlabel strong{color:var(--ink); font-family:'Space Grotesk',sans-serif; font-size:14px; display:block; margin-bottom:2px;}
+
+  figure{margin:24px 0; }
+  figure img{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+  }
+  figcaption{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-muted);
+    margin-top:10px;
+  }
+
+  /* two-col */
+  .cols-2{display:grid; grid-template-columns:1fr 1fr; gap:36px;}
+
+  /* lists */
+  .kit{list-style:none; margin:0; padding:0;}
+  .kit li{
+    display:grid; grid-template-columns:110px 1fr; gap:16px;
+    padding:14px 0; border-top:1px solid var(--line);
+  }
+  .kit li:first-child{border-top:none;}
+  .kit .name{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13.5px; color:var(--teal);}
+  .kit .desc{font-size:14.5px; color:var(--ink-muted);}
+
+  /* tables */
+  .tablewrap{overflow-x:auto; margin:24px 0; border:1px solid var(--line); border-radius:var(--radius);}
+  table{border-collapse:collapse; width:100%; font-size:14px; min-width:640px;}
+  thead th{
+    text-align:left; background:var(--bg-dark); color:#DCEBE9;
+    font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:11.5px;
+    letter-spacing:.05em; text-transform:uppercase;
+    padding:12px 16px;
+  }
+  tbody td{
+    padding:12px 16px; border-top:1px solid var(--line); vertical-align:top;
+  }
+  tbody tr:nth-child(even){background:var(--surface-alt);}
+  td.reqid{font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--rust); white-space:nowrap;}
+  .compare-table th:first-child, .compare-table td:first-child{font-weight:600;}
+  .badge{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    padding:2px 8px; border-radius:99px; background:var(--surface-alt); color:var(--ink-muted); border:1px solid var(--line);
+  }
+
+  /* screenshots gallery */
+  .app-gallery{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:28px;
+  }
+  .app-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .app-card .frame{
+    background:#EDEFEC; padding:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .app-card .frame img{border-radius:6px; border:1px solid var(--line);}
+  .app-card .meta{padding:16px 18px 20px;}
+  .app-card .meta .role{font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--rust); margin-bottom:6px;}
+  .app-card .meta h4{font-size:16px; margin-bottom:6px;}
+  .app-card .meta p{font-size:13.6px; color:var(--ink-muted); margin:0;}
+  .app-card.span2{grid-column:span 2;}
+  .app-card.span2 .frame img{max-height:320px; width:auto;}
+
+  /* gantt strip in-hero-esque */
+  .fullbleed-fig{margin:24px 0;}
+  .fullbleed-fig img{width:100%;}
+
+  /* security testing checklist */
+  .checklist{list-style:none;margin:0;padding:0;}
+  .checklist li{
+    display:flex; gap:12px; align-items:flex-start;
+    padding:12px 0; border-top:1px solid var(--line);
+    font-size:15px;
+  }
+  .checklist li:first-child{border-top:none;}
+  .checklist .box{
+    width:18px;height:18px;border:1.5px solid var(--teal); border-radius:4px; flex:none; margin-top:3px;
+    position:relative;
+  }
+  .checklist .box::after{
+    content:""; position:absolute; left:3px; top:0px; width:5px;height:9px;
+    border-right:2px solid var(--teal); border-bottom:2px solid var(--teal); transform:rotate(40deg);
+  }
+
+  /* footer */
+  footer{
+    background:var(--bg-dark); color:#9FBEBB;
+    padding:56px 56px 40px;
+  }
+  footer .foot-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:40px; max-width:var(--maxw);}
+  footer h4{color:#fff; font-size:14px; font-family:'IBM Plex Mono',monospace; letter-spacing:.06em; text-transform:uppercase;}
+  footer ol{padding-left:18px; font-size:13.5px; line-height:1.8; color:#9FBEBB;}
+  footer a{color:#BEDAD7;}
+  .foot-bottom{
+    max-width:var(--maxw); margin-top:40px; padding-top:20px; border-top:1px solid var(--line-dark);
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5C8A87;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:980px){
+    .shell{grid-template-columns:1fr;}
+    nav.sidenav{
+      position:fixed; left:0; top:53px; bottom:0; width:270px; z-index:60;
+      transform:translateX(-100%); transition:transform .25s ease;
+      box-shadow:20px 0 40px rgba(0,0,0,.25);
+    }
+    nav.sidenav.open{transform:translateX(0);}
+    .topbar{display:flex;}
+    .hero-grid{grid-template-columns:1fr;}
+    .hero{padding:44px 24px 40px;}
+    .hero h1{font-size:32px;}
+    section{padding:44px 24px;}
+    .cols-2{grid-template-columns:1fr;}
+    .app-gallery{grid-template-columns:1fr;}
+    .video-grid{grid-template-columns:1fr;}
+    .app-card.span2{grid-column:span 1;}
+    footer{padding:40px 24px;}
+    footer .foot-grid{grid-template-columns:1fr;}
+    .hero .stats{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<div class="topbar">
+  <span>✛ MediSync</span>
+  <button id="navToggle" aria-expanded="false" aria-controls="sidenav">MENU</button>
+</div>
+
+<div class="shell">
+  <nav class="sidenav" id="sidenav" aria-label="Section navigation">
+    <div class="brand"><span class="cross">✛</span> MediSync</div>
+    <div class="brand-sub">SECURE IoT MEDICATION LOCKER</div>
+
+    <div class="navgroup-label">Proposal</div>
+    <a class="navlink" href="#problem"><span class="num">01</span>Problem Statement</a>
+    <a class="navlink" href="#introduction"><span class="num">02</span>Introduction</a>
+    <a class="navlink" href="#literature"><span class="num">03</span>Literature Review</a>
+    <a class="navlink" href="#comparison"><span class="num">04</span>Comparison with PILBOX</a>
+    <a class="navlink" href="#solution"><span class="num">05</span>Our Solution</a>
+
+    <div class="navgroup-label">Design</div>
+    <a class="navlink" href="#poc"><span class="num">06</span>Proof of Concept</a>
+    <a class="navlink" href="#architecture"><span class="num">07</span>System Architecture</a>
+    <a class="navlink" href="#gantt"><span class="num">08</span>Gantt Chart</a>
+    <a class="navlink" href="#block"><span class="num">09</span>Block Diagram</a>
+
+    <div class="navgroup-label">Security</div>
+    <a class="navlink" href="#tr64"><span class="num">10</span>TR64 Security Design</a>
+    <a class="navlink" href="#testing"><span class="num">11</span>Security Testing Plan</a>
+
+    <div class="navgroup-label">Build</div>
+    <a class="navlink" href="#app"><span class="num">▹</span>Application Screens</a>
+    <a class="navlink" href="#demo"><span class="num">▹</span>Demo Videos</a>
+
+    <div class="navgroup-label">Close</div>
+    <a class="navlink" href="#conclusion"><span class="num">12</span>Conclusion</a>
+    <a class="navlink" href="#references"><span class="num">13</span>References</a>
+  </nav>
+
+  <main id="main">
+
+    <!-- ============ HERO ============ -->
+    <header class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow">IoT Security Capstone Project</div>
+          <h1>Waiting for medicine shouldn't be the last thing standing between a patient and going home.</h1>
+          <p class="lede">MediSync is a secure, edge-to-cloud IoT medication self-collection locker — ESP32-driven, cloud-monitored, and role-based by design — built to close the technical gap left by existing self-collection systems like PILBOX.</p>
+          <div class="stats">
+            <div class="stat"><div class="n">17 min</div><div class="l">MEDIAN POLYCLINIC WAIT, FEB 2023</div></div>
+            <div class="stat"><div class="n">21</div><div class="l">TR64 CONTROLS MAPPED</div></div>
+            <div class="stat"><div class="n">48 hr</div><div class="l">COLLECTION TIME-OUT WINDOW</div></div>
+          </div>
+        </div>
+        <div class="console" aria-hidden="true">
+          <div class="console-head"><span class="dot live"></span> SECURITY EVENT LOG — LIVE</div>
+          <div class="console-body" id="logfeed"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============ 01 PROBLEM ============ -->
+    <section id="problem">
+      <div class="section-head">
+        <div class="section-num">01 / Problem Statement</div>
+        <h2>The wait doesn't end at the consultation room door.</h2>
+      </div>
+      <p class="lead">A Parliamentary Question and Answering response published by the Ministry of Health Singapore found that the overall median doctor consultation waiting time for walk-in patients at polyclinics in February 2023 was 17 minutes — and that figure doesn't include the wait to collect medication afterwards.</p>
+      <p>After a consultation ends, patients face an additional wait for medication collection, compounding the strain on their time and attention. There is a clear need for a <strong>secure IoT-enabled medication locker</strong> that reduces collection wait time, ensures patients receive the correct prescribed medication, and reduces manpower strain through automatic refill notifications and continuous monitoring of medication storage conditions.</p>
+      <div class="callout rust">
+        <span class="k">Guiding Question</span>
+        How can we streamline the medication prescribed process in hospitals?
+      </div>
+    </section>
+
+    <!-- ============ 02 INTRODUCTION ============ -->
+    <section id="introduction">
+      <div class="section-head">
+        <div class="section-num">02 / Introduction</div>
+        <h2>An edge device that locks, senses, and reports — all at once.</h2>
+      </div>
+      <p class="lead">The proposed system is a secure medication collection locker built around an ESP32, keypad, DHT22 sensor, ultrasonic sensor, servo motor, and buzzer — networked and integrated with cloud systems.</p>
+      <p>The ESP32 acts as an IoT edge device, collecting and processing data and controlling actuators to carry out required actions. Sensor readings are transmitted to ThingSpeak for cloud visualization, while a web application and database manage patients, prescriptions, inventory, and access records. Security controls are applied across the device, network, application, and database layers to protect the system from unauthorized medication collection and data exposure.</p>
+      <p>IoT systems are increasingly used in real-world scenarios to improve operational efficiency and convenience, yet publicly available information rarely details their IoT architecture, environmental monitoring, or security event logging. This project focuses on demonstrating those technical and cybersecurity features using an ESP32-based locker, cloud monitoring, and role-based access control.</p>
+    </section>
+
+    <!-- ============ 03 LITERATURE REVIEW ============ -->
+    <section id="literature">
+      <div class="section-head">
+        <div class="section-num">03 / Literature Review</div>
+        <h2>Two frameworks shaped every technical decision.</h2>
+      </div>
+
+      <h3>IoT platform requirements</h3>
+      <p>Mineraud et al. (2015) reviewed a range of IoT platforms and identified core platform functions: device management, communication support, data processing, data storage, application development, and security. An effective platform supports communication between sensors and actuators while allowing collected data to be processed and accessed by applications.</p>
+      <p>In MediSync, the ESP32 performs device control and edge processing; ThingSpeak stores and visualizes temperature and humidity readings; the backend and MongoDB database manage users, prescriptions, inventory, locker assignments, and audit records. Separating these concerns improves modularity — changes to sensor monitoring don't require changes to the patient or staff application — while dedicated security controls close the privacy and security gaps identified in existing IoT platforms.</p>
+
+      <h3>IoT architecture and technology landscape</h3>
+      <p>The IDA IoT Technology Landscape describes an IoT system as a stack of connected layers: sensors and actuators, local communication networks, gateways, wide-area communication, service platforms, and user applications. In MediSync, sensors such as the DHT22 and ultrasonic sensor collect data from the physical environment, while actuators — the servo motor, buzzer, LED, and LCD — carry out commands from the ESP32. Gateways connect local devices to external networks, and the cloud platform provides data storage, analysis, device management, and application support.</p>
+
+      <h3>Synthesis</h3>
+      <p>Together, the two sources shaped the system end to end: the IDA landscape organizes the project into device, edge, network, cloud, and application layers, while Mineraud et al. (2015) surfaced the platform capabilities and security concerns — device management, communication, data processing, interoperability, privacy, and secure application access — that guided the choice of ESP32, ThingSpeak, MongoDB, the web application, and the system's security controls.</p>
+    </section>
+
+    <!-- ============ 04 COMPARISON ============ -->
+    <section id="comparison" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">04 / Comparison with Existing System</div>
+        <h2>Benchmarked against PILBOX.</h2>
+        <p class="lead">Singapore General Hospital's Prescription In Locker Box (PILBOX) allows self-collection of medication on a pre-arranged date, including weekends and public holidays (SingHealth Polyclinics, n.d.). It proves the convenience case — but publicly available information stops short of its IoT architecture, cloud communication, environmental monitoring, or cybersecurity controls. MediSync closes that technical gap.</p>
+      </div>
+      <div class="tablewrap">
+        <table class="compare-table">
+          <thead>
+            <tr><th>Feature</th><th>Traditional pharmacy counter</th><th>PILBOX</th><th>MediSync (Proposal)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Collection method</td><td>Staff assisted</td><td>Self-collection</td><td>Self-collection</td></tr>
+            <tr><td>Authentication</td><td>Identification at counter</td><td>Code or approved method</td><td>One-time PIN for patient · RFID for staff</td></tr>
+            <tr><td>Locker control</td><td>Not applicable</td><td>Electronic locker</td><td>ESP32-controlled servo motor acting as lock</td></tr>
+            <tr><td>Environmental monitoring</td><td>Pharmacy controlled</td><td>Not publicly specified</td><td>DHT22 with ThingSpeak dashboard for temperature &amp; humidity</td></tr>
+            <tr><td>Door status monitoring</td><td>Staff observation</td><td>Not publicly specified</td><td>Ultrasonic sensor</td></tr>
+            <tr><td>Security event logging</td><td>Pharmacy records</td><td>Not publicly specified</td><td>Login, failed PIN, collection, and staff access logs</td></tr>
+          </tbody>
+        </table>
+      </div>
+      </div>
+    </section>
+
+    <!-- ============ 05 SOLUTION ============ -->
+    <section id="solution">
+      <div class="section-head">
+        <div class="section-num">05 / Our Solution</div>
+        <h2>From counter hand-off to a secure, automated pickup.</h2>
+      </div>
+      <p class="lead">MediSync is an IoT-enabled self-collection locker for medicine that transitions traditional counter collection into a secure, automated process.</p>
+      <p>When a patient's appointment ends, the attending doctor electronically transmits the prescription to the system. The system instantly updates the inventory database, deducts stock, and issues a unique authentication method to the patient, who uses it to securely unlock and retrieve their medicine at a self-collection kiosk. Once marked as collected, that authentication method is immediately retired — it cannot be reused.</p>
+      <p>To keep operations running, the system continuously monitors storage temperature, triggering an alarm on fluctuation, and automatically alerts nursing staff to restock using secure credentials when inventory runs low. Temperature and humidity readings from the DHT22 sensors flow to ThingSpeak and display on cloud dashboards, so medication condition is always visible.</p>
+    </section>
+
+    <!-- ============ 06 PROOF OF CONCEPT ============ -->
+    <section id="poc" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">06 / Proof of Concept Design</div>
+        <h2>Hardware and physical security, working together.</h2>
+        <p class="lead">An all-day medicine pickup station made possible by hardware working seamlessly together — showing how digital systems handshake with physical infrastructure to automate dispensing.</p>
+      </div>
+      <div class="cols-2">
+        <figure>
+          <img src="assets/poc-design.png" alt="Proof of concept design render of the MediSync self-collection kiosk with touchscreen, camera, and locker compartments">
+          <figcaption>FIG. 06 — Proof of concept kiosk design</figcaption>
+        </figure>
+        <div>
+          <h3 style="margin-top:0;">Hardware</h3>
+          <ul class="kit">
+            <li><span class="name">Touchscreen</span><span class="desc">Lets patients enter verification details or sign in for collection.</span></li>
+            <li><span class="name">Camera / QR</span><span class="desc">Reads electronic tokens from a mobile health app or printed prescription.</span></li>
+            <li><span class="name">Smart locks</span><span class="desc">Solenoid lock actuator per compartment, linked to the central unit.</span></li>
+            <li><span class="name">DHT sensors</span><span class="desc">Monitor temperature for temperature-sensitive medication.</span></li>
+            <li><span class="name">IoT / networking</span><span class="desc">Routers and cellular modems link lockers to the pharmacy database and SMS gateway.</span></li>
+            <li><span class="name">CCTV</span><span class="desc">Continuous surveillance of the collection station.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Physical &amp; access security</h3>
+      <div class="cols-2">
+        <ul class="checklist">
+          <li><span class="box"></span>Ruggedized, tamper-resistant steel locker panels</li>
+          <li><span class="box"></span>Overhead CCTV recording the station 24/7</li>
+          <li><span class="box"></span>Internal solenoid latches — no external handles or keyholes to pry open</li>
+          <li><span class="box"></span>Singpass integration for national identity verification</li>
+        </ul>
+        <ul class="checklist">
+          <li><span class="box"></span>Two-factor / dynamic OTP required before unlock</li>
+          <li><span class="box"></span>Appointed collection tracking with a digital audit trail</li>
+          <li><span class="box"></span>48-hour pickup window, then key wipe and staff-only retrieval</li>
+        </ul>
+      </div>
+      </div>
+    </section>
+
+    <!-- ============ 07 SYSTEM ARCHITECTURE ============ -->
+    <section id="architecture" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">07 / System Architecture</div>
+        <h2>Edge to cloud, in one continuous loop.</h2>
+        <p class="lead">The ESP32 sits at the edge, interfacing directly with sensors — the DHT22 collects temperature and humidity, while the keypad and servo motor form the authentication and physical door lock. The ESP32 communicates with the cloud; ThingSpeak receives readings for visualization, and the cloud backend processes access-control decisions and maintains collection and security records.</p>
+      </div>
+      <figure class="fullbleed-fig">
+        <img src="assets/system-architecture.png" alt="System architecture diagram showing ESP32 edge device, sensors, ThingSpeak cloud, web application, and MongoDB database">
+        <figcaption>FIG. 07 — Edge-to-cloud system architecture</figcaption>
+      </figure>
+
+      <div class="cols-2">
+        <div>
+          <h3 style="margin-top:0;">Hardware components</h3>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Component</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">ESP32</td><td>Reads sensors, controls output devices, communicates with the cloud</td></tr>
+                <tr><td class="mono">Pin pad</td><td>Patients key in a PIN to unlock and collect medication</td></tr>
+                <tr><td class="mono">Buzzer</td><td>Signals wrong temperature or a locker door not closed properly</td></tr>
+                <tr><td class="mono">RFID</td><td>Authenticates doctors for medicine access</td></tr>
+                <tr><td class="mono">Servo motor</td><td>Rotates to unlock when the PIN is entered correctly</td></tr>
+                <tr><td class="mono">DHT22</td><td>Monitors temperature and humidity for best medication condition</td></tr>
+                <tr><td class="mono">Ultrasonic sensor</td><td>Checks locker door distance to confirm it's closed</td></tr>
+                <tr><td class="mono">LED</td><td>Signals that the locker has been unlocked</td></tr>
+                <tr><td class="mono">LCD</td><td>Displays instructions to patients and nurses</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-top:0;">Software components</h3>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Component</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">Patient web app</td><td>Appointment booking and collection status viewing</td></tr>
+                <tr><td class="mono">Doctor portal</td><td>Prescription creation and patient record access</td></tr>
+                <tr><td class="mono">Staff portal</td><td>Medication preparation, locker assignment, inventory updates</td></tr>
+                <tr><td class="mono">Backend API</td><td>Authentication, authorization, validation, and business logic</td></tr>
+                <tr><td class="mono">MongoDB</td><td>Users, appointments, prescriptions, inventory, requests, audit logs</td></tr>
+                <tr><td class="mono">ThingSpeak</td><td>Stores and visualizes temperature and humidity readings</td></tr>
+                <tr><td class="mono">Email service</td><td>Sends appointment confirmation and collection notifications</td></tr>
+                <tr><td class="mono">ESP32 firmware</td><td>Reads sensors, controls the lock, communicates securely with the cloud</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <h3>Flowchart</h3>
+      <p>The patient books an appointment through the hospital's website; a one-time OTP is sent for verification, followed by a confirmation email. After the appointment, the doctor keys in the required medicine via a website connected to MongoDB — transferred over HTTPS and TLS. Inside the locker, a DHT sensor constantly monitors temperature and humidity, and an ultrasonic sensor checks whether the door is closed. The patient receives a password to collect medicine, enters it on the keypad as prompted by the LCD, and the servo motor dispenses the medicine.</p>
+      <figure class="fullbleed-fig">
+        <img src="assets/flowchart.png" alt="Flowchart of the patient booking, prescription, and medicine collection process">
+        <figcaption>FIG. 07b — End-to-end process flowchart</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============ 08 GANTT ============ -->
+    <section id="gantt" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">08 / Gantt Chart</div>
+        <h2>Project timeline.</h2>
+      </div>
+      <figure class="fullbleed-fig">
+        <img src="assets/gantt-chart.png" alt="Gantt chart showing the project timeline and task schedule">
+        <figcaption>FIG. 08 — Project schedule</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============ 09 BLOCK DIAGRAM ============ -->
+    <section id="block" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">09 / Block Diagram</div>
+        <h2>System diagram.</h2>
+      </div>
+      <figure class="fullbleed-fig">
+        <img src="assets/block-diagram.png" alt="Block diagram of the MediSync system components and connections">
+        <figcaption>FIG. 09 — Block / system diagram</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <!-- ============ 10 TR64 ============ -->
+    <section id="tr64" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">10 / Security Design Using TR64</div>
+        <h2>Twenty-one controls, mapped requirement by requirement.</h2>
+        <p class="lead">Every TR64 IoT Security Standard requirement below is matched to the specific mechanism in MediSync that satisfies it.</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Req. ID</th><th>TR64 Requirement</th><th>How the Project Complies</th></tr></thead>
+          <tbody>
+            <tr><td class="reqid">CS-02</td><td>Cryptographic algorithms should be industry recognised and deemed secure.</td><td>Secure cryptographic algorithms (e.g., HTTPS/TLS) protect communication between the website, NodeMCU, and MongoDB database.</td></tr>
+            <tr><td class="reqid">CS-03</td><td>AES should be used for symmetric cryptography.</td><td>Patient data, PINs, and medicine records stored in the database are encrypted using AES to ensure confidentiality.</td></tr>
+            <tr><td class="reqid">CS-05</td><td>Proper key management should be established.</td><td>Encryption keys and authentication credentials are securely managed server-side and never exposed to users or IoT devices.</td></tr>
+            <tr><td class="reqid">IA-01</td><td>Credentials should be stored securely.</td><td>Patient PINs, doctor login credentials, and nurse RFID information are stored using hashing or encryption.</td></tr>
+            <tr><td class="reqid">IA-02</td><td>Client should be authenticated before establishing connections.</td><td>Patients enter the correct PIN (optionally with facial verification); nurses authenticate via RFID before accessing the locker.</td></tr>
+            <tr><td class="reqid">IA-03</td><td>Unique, non-modifiable and verifiable identities should be established.</td><td>Every patient, doctor, and staff member has a unique identifier verifiable by the system.</td></tr>
+            <tr><td class="reqid">NP-01</td><td>Explicit authorisation should be required for an initial connection.</td><td>Only NodeMCU and the registered web server are allowed to communicate with the system.</td></tr>
+            <tr><td class="reqid">NP-03</td><td>Proven transport protocols with TLS/DTLS should be employed.</td><td>Communication between the web app, cloud database, and NodeMCU uses HTTPS/TLS.</td></tr>
+            <tr><td class="reqid">NP-06</td><td>Network access control may be implemented.</td><td>Only authenticated users and trusted devices may access the IoT network and medicine management system.</td></tr>
+            <tr><td class="reqid">FP-01</td><td>Security credentials, keys and tokens should be protected.</td><td>PINs, RFID credentials, authentication tokens, and encryption keys are protected from unauthorised access.</td></tr>
+            <tr><td class="reqid">FP-02</td><td>Integrity of security functions and data should be protected.</td><td>Inventory, locker status, user permissions, and configurations are protected from unauthorised modification.</td></tr>
+            <tr><td class="reqid">DP-01</td><td>Sensitive data should be protected.</td><td>Patient information, prescriptions, and inventory are securely stored and protected from unauthorised access.</td></tr>
+            <tr><td class="reqid">DP-03</td><td>Input validation should guard against vulnerabilities.</td><td>PIN entries, login credentials, medicine records, and user inputs are validated to prevent malicious data.</td></tr>
+            <tr><td class="reqid">DP-04</td><td>Access control mechanisms should prevent unauthorized data access.</td><td>Role-based access ensures only doctors prescribe, nurses restock, and patients collect their own medicine.</td></tr>
+            <tr><td class="reqid">AP-01</td><td>Lock-out mechanism should protect against repeated unauthorized attempts.</td><td>The locker temporarily locks after several incorrect PIN attempts and alerts staff.</td></tr>
+            <tr><td class="reqid">AP-02</td><td>Multi-factor authentication should be employed for impactful operations.</td><td>Restocking and admin changes require RFID authentication plus administrator login.</td></tr>
+            <tr><td class="reqid">AP-03</td><td>Physical access restrictions should be implemented.</td><td>The locker stays physically locked, unlocking only after a valid PIN is authenticated.</td></tr>
+            <tr><td class="reqid">AP-05</td><td>Proper session management should be employed.</td><td>User sessions automatically end after collection or logout to prevent unauthorised reuse.</td></tr>
+            <tr><td class="reqid">RS-01</td><td>Device may support integrity of self-test and error detection.</td><td>The system continuously monitors the DHT sensor, ultrasonic sensor, and servo motor for abnormal conditions.</td></tr>
+            <tr><td class="reqid">RS-03</td><td>Systems should withstand malicious attacks and resource exhaustion.</td><td>The cloud server monitors requests and restricts excessive or abnormal access attempts.</td></tr>
+            <tr><td class="reqid">RS-04</td><td>Regular backup of system data should be conducted.</td><td>Patient records, prescriptions, and inventory databases are regularly backed up for recovery.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <span class="k">Security audit — AU-01 · AU-02 · AU-03</span>
+        The system also records significant security events — login attempts, medicine collection, RFID authentication, and inventory updates — with timestamps, protects audit logs from unauthorised modification, and encrypts logs to preserve confidentiality and integrity.
+      </div>
+      </div>
+    </section>
+
+    <!-- ============ 11 SECURITY TESTING ============ -->
+    <section id="testing">
+      <div class="section-head">
+        <div class="section-num">11 / Security Testing Plan</div>
+        <h2>What we'll verify before calling it secure.</h2>
+      </div>
+      <ul class="checklist">
+        <li><span class="box"></span>Temporary lockout is enforced after 3 incorrect authentication attempts.</li>
+        <li><span class="box"></span>A collection authentication method can be verified once, and only once.</li>
+        <li><span class="box"></span>ThingSpeak flags abnormalities, and the buzzer signals when the locker isn't closed properly.</li>
+      </ul>
+    </section>
+
+    <!-- ============ APPLICATION SCREENS ============ -->
+    <section id="app" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">Build / Application Screens</div>
+        <h2>What's actually running.</h2>
+        <p class="lead">Screens from the working MediSync web application — the staff-facing admin console and the patient-facing booking and collection flow.</p>
+      </div>
+      <div class="app-gallery">
+
+        <div class="app-card span2">
+          <div class="frame"><img src="assets/screenshot-admin-doctors.png" alt="Admin dashboard showing Doctor Access Control accounts and Clinic Room Availability scheduling"></div>
+          <div class="meta">
+            <div class="role">Staff Portal</div>
+            <h4>Doctor access &amp; room scheduling</h4>
+            <p>Administrators create doctor accounts, manage availability status, and view 30-minute consultation-room slots for the day.</p>
+          </div>
+        </div>
+
+        <div class="app-card">
+          <div class="frame"><img src="assets/screenshot-med-reporting.png" alt="Daily medication usage reporting dashboard with total quantity, collections, and medication types"></div>
+          <div class="meta">
+            <div class="role">Staff Portal</div>
+            <h4>Daily medication usage</h4>
+            <p>Tracks total quantity given out, total collections, and medication types collected for any given day.</p>
+          </div>
+        </div>
+
+        <div class="app-card">
+          <div class="frame"><img src="assets/screenshot-patient-home.png" alt="Patient home screen showing appointments and medicine collection status"></div>
+          <div class="meta">
+            <div class="role">Patient App</div>
+            <h4>Patient home</h4>
+            <p>A single view of the next booked appointment, pending medicine collection, and follow-up reminders.</p>
+          </div>
+        </div>
+
+        <div class="app-card">
+          <div class="frame"><img src="assets/screenshot-patient-booking.png" alt="Patient appointment booking screen with doctor, date, time slot, and location selection"></div>
+          <div class="meta">
+            <div class="role">Patient App</div>
+            <h4>Book an appointment</h4>
+            <p>Patients pick a doctor, date, open time slot, and clinic room before confirming the booking.</p>
+          </div>
+        </div>
+
+        <div class="app-card">
+          <div class="frame"><img src="assets/screenshot-patient-medicine.png" alt="Patient medicine collection screen showing prescription details and a confirm collection button"></div>
+          <div class="meta">
+            <div class="role">Patient App</div>
+            <h4>Medicine collection</h4>
+            <p>Shows the prescription — dosage, quantity, and instructions — and lets the patient confirm collection once ready.</p>
+          </div>
+        </div>
+
+      </div>
+      </div>
+    </section>
+
+    <!-- ============ DEMO VIDEOS ============ -->
+    <section id="demo" class="wide">
+      <div style="max-width:1180px;">
+      <div class="section-head">
+        <div class="section-num">Build / Demo Videos</div>
+        <h2>See it in action.</h2>
+        <p class="lead">Walkthroughs of MediSync running end to end — booking, prescription, and locker collection.</p>
+      </div>
+
+      <div class="video-grid">
+        <div class="video-card">
+          <video controls preload="metadata">
+            <source src="assets/iots%20vid1.mp4" type="video/mp4">
+            Your browser doesn't support video playback.
+          </video>
+          <div class="vlabel"><strong>Part 1</strong>Demo walkthrough</div>
+        </div>
+        <div class="video-card">
+          <video controls preload="metadata">
+            <source src="assets/iots%20vid2.mp4" type="video/mp4">
+            Your browser doesn't support video playback.
+          </video>
+          <div class="vlabel"><strong>Part 2</strong>Demo walkthrough</div>
+        </div>
+        <div class="video-card">
+          <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden;">
+            <iframe
+              src="https://www.youtube.com/embed/CQUlmujRPaM"
+              style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <div class="vlabel"><strong>Part 3</strong>Demo walkthrough</div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- ============ 12 CONCLUSION ============ -->
+    <section id="conclusion">
+      <div class="section-head">
+        <div class="section-num">12 / Conclusion</div>
+        <h2>A secure end-to-end system, proven out.</h2>
+      </div>
+      <p class="lead">MediSync is a secure edge-to-cloud IoT medication self-collection locker that combines user authentication, physical locker control, environmental monitoring, cloud visualization, role-based access control, and security-event logging.</p>
+      <p>The proof of concept demonstrates how the ESP32, sensors, actuators, a web application, MongoDB, and ThingSpeak can be integrated into a secure, end-to-end system — with security testing used to evaluate whether the implemented controls can prevent unauthorized access, data exposure, and reuse of collection credentials.</p>
+    </section>
+
+    <!-- ============ 13 REFERENCES ============ -->
+    <section id="references">
+      <div class="section-head">
+        <div class="section-num">13 / References</div>
+        <h2>Sources</h2>
+      </div>
+      <ol style="padding-left:20px; font-size:14.5px; color:var(--ink-muted); line-height:1.9;">
+        <li>Mineraud, J., Mazhelis, O., Su, X. and Tarkoma, S. (2015) 'A gap analysis of Internet-of-Things platforms', <em>Computer Communications</em>, 89–90, pp. 5–16. Available at: <a href="http://arxiv.org/pdf/1502.01181.pdf" target="_blank" rel="noopener">arxiv.org/pdf/1502.01181.pdf</a> (Accessed: 17 July 2026).</li>
+        <li>Infocomm Development Authority of Singapore (n.d.) <em>IoT technology landscape</em>. Available at: <a href="https://www.imda.gov.sg/~/media/imda/files/industry%20development/infrastructure/technology/internetofthings.pdf" target="_blank" rel="noopener">imda.gov.sg</a> (Accessed: 17 July 2026).</li>
+        <li>Ministry of Health (2023) <em>Polyclinic Wait Time</em>. Available at: <a href="https://www.moh.gov.sg/newsroom/polyclinic-wait-time/" target="_blank" rel="noopener">moh.gov.sg/newsroom/polyclinic-wait-time</a> (Accessed: 10 July 2026).</li>
+        <li>National University Hospital (2026) <em>Medication Orders</em>. Available at: <a href="https://www.nuh.com.sg/care-at-nuh/services/pharmacy/medication-orders" target="_blank" rel="noopener">nuh.com.sg</a> (Accessed: 17 July 2026).</li>
+        <li>SingHealth Polyclinics (n.d.) <em>PILBOX and MDS</em>. Available at: <a href="https://polyclinic.singhealth.com.sg/our-clinic-services/pharmacy/pilbox-and-mds" target="_blank" rel="noopener">polyclinic.singhealth.com.sg</a> (Accessed: 15 July 2026).</li>
+      </ol>
+    </section>
+
+    <footer>
+      <div class="foot-grid">
+        <div>
+          <h4>MediSync</h4>
+          <p style="max-width:44ch; font-size:14px; margin-top:10px;">A secure, edge-to-cloud IoT medication self-collection locker — built to reduce collection wait time and strengthen medication security at the last mile of care.</p>
+        </div>
+        <div>
+          <h4>Table of Contents</h4>
+          <ol>
+            <li><a href="#problem">Problem Statement</a></li>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#literature">Literature Review</a></li>
+            <li><a href="#comparison">Comparison with PILBOX</a></li>
+            <li><a href="#solution">Our Solution</a></li>
+            <li><a href="#poc">Proof of Concept Design</a></li>
+            <li><a href="#architecture">System Architecture</a></li>
+            <li><a href="#gantt">Gantt Chart</a></li>
+            <li><a href="#block">Block Diagram</a></li>
+            <li><a href="#tr64">Security Design Using TR64</a></li>
+            <li><a href="#testing">Security Testing Plan</a></li>
+            <li><a href="#conclusion">Conclusion</a></li>
+            <li><a href="#references">References</a></li>
+          </ol>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <span>MEDISYNC — IoT SECURITY PROJECT PROPOSAL</span>
+        <span>GROUP 3</span>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Mobile nav toggle
+  const toggle = document.getElementById('navToggle');
+  const nav = document.getElementById('sidenav');
+  toggle.addEventListener('click', () => {
+    const open = nav.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open);
+  });
+  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    nav.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }));
+
+  // Active section highlighting
+  const links = document.querySelectorAll('.navlink');
+  const targets = Array.from(links).map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const id = '#' + entry.target.id;
+      const link = document.querySelector(`.navlink[href="${id}"]`);
+      if (!link) return;
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  targets.forEach(t => io.observe(t));
+
+  // Signature element: security event log ticker
+  const feed = document.getElementById('logfeed');
+  const events = [
+    ['09:41:02','LOGIN_OK','Doctor RFID authenticated — Dr. Ravad Nadam'],
+    ['09:41:15','RX_ISSUED','Prescription pushed to MongoDB · Panadol 500mg x10'],
+    ['09:41:16','OTP_SENT','One-time PIN dispatched to patient device'],
+    ['09:52:40','TEMP_OK','DHT22 · 4.2°C / 46% RH — within range'],
+    ['10:03:11','PIN_VERIFIED','Locker 5 unlock authorised'],
+    ['10:03:12','DOOR_OPEN','Ultrasonic sensor — door state changed'],
+    ['10:03:19','DOOR_CLOSED','Ultrasonic sensor — door state changed'],
+    ['10:03:20','COLLECTED','Authentication token retired — single use'],
+    ['10:14:55','PIN_FAILED','Attempt 1 of 3 — locker 2', 'warn'],
+    ['10:15:40','LOCKOUT','3 failed attempts — locker 2 temporarily locked', 'warn'],
+    ['10:22:03','RESTOCK_ALERT','Inventory below threshold — nurse notified', 'warn'],
+    ['10:30:08','RFID_OK','Nurse RFID authenticated for restock'],
+    ['10:41:00','AUDIT_WRITE','Event log encrypted and appended'],
+  ];
+  let i = 0;
+  const MAX_LINES = 9;
+  function pushLine(){
+    const [ts, tag, msg, level] = events[i % events.length];
+    const line = document.createElement('div');
+    line.className = 'line';
+    line.innerHTML = `<span class="ts">${ts}</span><span class="tag${level ? ' '+level : ''}">${tag}</span>  ${msg}`;
+    feed.appendChild(line);
+    while (feed.children.length > MAX_LINES) feed.removeChild(feed.firstChild);
+    feed.scrollTop = feed.scrollHeight;
+    i++;
+  }
+  for (let k = 0; k < 6; k++) pushLine();
+  setInterval(pushLine, 1900);
+</script>
+
+</body>
+</html>
