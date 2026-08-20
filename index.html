@@ -443,6 +443,7 @@
     <div class="navgroup-label">Security</div>
     <a class="navlink" href="#tr64"><span class="num">10</span>TR64 Security Design</a>
     <a class="navlink" href="#testing"><span class="num">11</span>Security Testing Plan</a>
+    <a class="navlink" href="#rfid"><span class="num">▹</span>RFID Cloning Research</a>
 
     <div class="navgroup-label">Build</div>
     <a class="navlink" href="#app"><span class="num">▹</span>Application Screens</a>
@@ -745,6 +746,25 @@
       </ul>
     </section>
 
+    <!-- ============ RFID CLONING RESEARCH ============ -->
+    <section id="rfid">
+      <div class="section-head">
+        <div class="section-num">Attack Research / RFID Cloning</div>
+        <h2>How a cloned staff badge could bypass the locker.</h2>
+      </div>
+      <ul class="checklist">
+        <li><span class="box"></span>Low-cost RFID tags (e.g. 125kHz EM4100) broadcast a <strong>static, unencrypted ID</strong> — the reader trusts the number, not the person.</li>
+        <li><span class="box"></span>A nearby reader/writer can capture that ID and copy it onto a blank tag — no password or database access needed.</li>
+        <li><span class="box"></span>Cloned tag presented at the locker = system grants access as that staff member, silently.</li>
+        <li><span class="box"></span>Original badge is untouched, so the theft goes unnoticed — unlike a lost card.</li>
+        <li><span class="box"></span>Impact on MediSync: impersonate a nurse (unauthorized restock) or doctor (fraudulent prescription).</li>
+      </ul>
+      <div class="callout rust">
+        <span class="k">Defended by</span>
+        AP-02 (RFID + login, not RFID alone) · IA-03 (verifiable identity, not just a static ID) · AP-05 (session expiry limits reuse)
+      </div>
+    </section>
+
     <!-- ============ APPLICATION SCREENS ============ -->
     <section id="app" class="wide">
       <div style="max-width:1180px;">
@@ -896,6 +916,7 @@
             <li><a href="#block">Block Diagram</a></li>
             <li><a href="#tr64">Security Design Using TR64</a></li>
             <li><a href="#testing">Security Testing Plan</a></li>
+            <li><a href="#rfid">RFID Cloning Research</a></li>
             <li><a href="#conclusion">Conclusion</a></li>
             <li><a href="#references">References</a></li>
           </ol>
